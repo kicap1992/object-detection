@@ -1,0 +1,45 @@
+import torch
+import cv2
+import pandas as pd
+
+# Download model from github
+model = torch.hub.load('ultralytics/yolov5', 'yolov5n')
+
+img = cv2.imread('car.jpg')
+img = cv2.resize(img, (1000, 650))
+
+# Perform detection on image
+result = model(img)
+print('result: ', result)
+
+# Convert detected result to pandas data frame
+data_frame = result.pandas().xyxy[0]
+print('data_frame:')
+print(data_frame)
+
+# Get the counts of each label
+label_counts = data_frame['name'].value_counts()
+print('Label counts:')
+print(label_counts)
+
+# Get indexes of all of the rows
+indexes = data_frame.index
+for index in indexes:
+    # Find the coordinate of top left corner of bounding box
+    x1 = int(data_frame['xmin'][index])
+    y1 = int(data_frame['ymin'][index])
+    # Find the coordinate of right bottom corner of bounding box
+    x2 = int(data_frame['xmax'][index])
+    y2 = int(data_frame['ymax'][index])
+
+    # Find label name
+    label = data_frame['name'][index]
+    # Find confidence score of the model
+    conf = data_frame['confidence'][index]
+    text = label + ' ' + str(conf.round(decimals=2))
+
+    cv2.rectangle(img, (x1, y1), (x2, y2), (255, 255, 0), 2)
+    cv2.putText(img, text, (x1, y1-5), cv2.FONT_HERSHEY_PLAIN, 2, (255, 255, 0), 2)
+
+cv2.imshow('IMAGE', img)
+cv2.waitKey(0)
